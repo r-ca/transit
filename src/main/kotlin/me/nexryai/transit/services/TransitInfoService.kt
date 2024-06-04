@@ -9,7 +9,24 @@ class TransitInfoService(private val params: TransitParams) {
     private val userAgent: String = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:126.0) Gecko/20100101 Firefox/126.0"
     private val log = Logger()
 
-    private fun genUrl(): String {
+    private fun getTotalRoute(): Int {
+        // 存在数を超えたら1と同じ内容が帰ってくるので，そこまで探索
+        var totalRoute = 1
+        val routes = mutableListOf<TransitInfo>()
+        while (true) {
+            val url = genUrl(totalRoute)
+            val doc = getJsoupDocument(url)
+            val info = analyzeDocument(doc)
+            routes.add(info)
+            if (routes.size > 1 && routes.first() == routes.last()) {
+                break
+            }
+            totalRoute++
+        }
+        return totalRoute
+    }
+
+    private fun genUrl(routeNo: Int = 1.toInt()): String {
         if (params.from.isEmpty() || params.to.isEmpty()) {
             throw IllegalArgumentException("From or To is empty")
         }
@@ -26,7 +43,7 @@ class TransitInfoService(private val params: TransitParams) {
             val hour = params.time.hour.toString().padStart(2, '0')
             val min = params.time.minute.toString().padStart(2, '0')
 
-            url += "&y=${y}&m=${m}&d=${d}&hh=${hour}&m1=${min[0]}&m2=${min[1]}"
+            url += "&y=${y}&m=${m}&d=${d}&hh=${hour}&m1=${min[0]}&m2=${min[1]}%no=${routeNo}"
         }
 
         url += if (params.timeMode == TimeMode.ARRIVAL) {
