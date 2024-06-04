@@ -4,26 +4,30 @@ import me.nexryai.transit.entities.*
 import me.nexryai.transit.utils.Logger
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
+import kotlin.collections.MutableList
 
 class TransitInfoService(private val params: TransitParams) {
     private val userAgent: String = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:126.0) Gecko/20100101 Firefox/126.0"
     private val log = Logger()
 
-    private fun getTotalRoute(): Int {
+    private fun getAllRoute(): MutableList<TransitInfo> { 
         // 存在数を超えたら1と同じ内容が帰ってくるので，そこまで探索
-        var totalRoute = 1
+        var totalRoute = 1.toInt()
         val routes = mutableListOf<TransitInfo>()
         while (true) {
-            val url = genUrl(totalRoute)
+            val url = genUrl(totalRoute.toInt())
             val doc = getJsoupDocument(url)
             val info = analyzeDocument(doc)
-            routes.add(info)
-            if (routes.size > 1 && routes.first() == routes.last()) {
+            if (routes.size > 1 && routes.first() == info) {
                 break
+            } else {
+                routes.add(info)
+                totalRoute++
+                log.debug("continue to next route")
+                log.debug("totalRoute: $totalRoute")
             }
-            totalRoute++
         }
-        return totalRoute
+        return routes 
     }
 
     private fun genUrl(routeNo: Int = 1.toInt()): String {
@@ -43,7 +47,7 @@ class TransitInfoService(private val params: TransitParams) {
             val hour = params.time.hour.toString().padStart(2, '0')
             val min = params.time.minute.toString().padStart(2, '0')
 
-            url += "&y=${y}&m=${m}&d=${d}&hh=${hour}&m1=${min[0]}&m2=${min[1]}%no=${routeNo}"
+            url += "&y=${y}&m=${m}&d=${d}&hh=${hour}&m1=${min[0]}&m2=${min[1]}"
         }
 
         url += if (params.timeMode == TimeMode.ARRIVAL) {
@@ -52,7 +56,7 @@ class TransitInfoService(private val params: TransitParams) {
             "&type=1"
         }
 
-        url += "&ticket=ic&expkind=1&userpass=1&ws=3&s=0&al=1&shin=1&ex=1&hb=1&lb=1&sr=1&no=1"
+        url += "&ticket=ic&expkind=1&userpass=1&ws=3&s=0&al=1&shin=1&ex=1&hb=1&lb=1&sr=1&no=${routeNo}"
         log.debug("URL: $url")
         return url
     }
@@ -166,10 +170,11 @@ class TransitInfoService(private val params: TransitParams) {
         return result
     }
 
-    fun getTransit(): TransitInfo {
-        val url = genUrl()
-        val doc = getJsoupDocument(url)
+    fun getTransit(): MutableList<TransitInfo> {
+        // val url = genUrl()
+        // val doc = getJsoupDocument(url)
 
-        return analyzeDocument(doc)
+        // return analyzeDocument(doc)
+        return getAllRoute()
     }
 }
