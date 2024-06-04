@@ -5,6 +5,7 @@ import kotlinx.html.*
 import me.nexryai.transit.entities.TransitInfo
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import kotlin.collections.MutableList
 
 class HeadTemplate: Template<HTML> {
     override fun HTML.apply() {
@@ -255,7 +256,7 @@ class ResultTemplate(private val result: TransitInfo): Template<FlowContent> {
     }
 }
 
-class ResultPageTemplate(private val result: TransitInfo): Template<HTML> {
+class ResultPageTemplate(private val result: MutableList<TransitInfo>): Template<HTML> {
     private val head = TemplatePlaceholder<HeadTemplate>()
     private val content = TemplatePlaceholder<ResultTemplate>()
     override fun HTML.apply() {
@@ -271,8 +272,13 @@ class ResultPageTemplate(private val result: TransitInfo): Template<HTML> {
                 }
 
                 div {
-                    id = "content"
-                    insert(ResultTemplate(result), content)
+                    id = "contents_container"
+                    for (r in result) {
+                        div {
+                            classes = setOf("content")
+                            insert(ResultTemplate(r), content)
+                        }
+                    }
                 }
             }
         }
